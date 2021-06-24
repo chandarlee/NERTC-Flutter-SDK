@@ -1,3 +1,16 @@
+## 4.2.1-rc.4
+* Fixed media relay error
+
+## 4.2.1-rc.3
+* Fixed ios `startScreenCapture` error
+* Fixed ios `stopScreenCapture` error
+
+## 4.2.1-rc.2
+* Upgrade NERtc SDK to 4.2.1
+
+## 4.1.0-rc.2
+* Upgrade NERtc SDK to 4.1.1
+
 ## 3.9.0
 * Upgrade NERtc SDK to 3.9.0
 

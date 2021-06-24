@@ -1,4 +1,6 @@
-// Copyright (c) 2019-2020 NetEase, Inc. All right reserved.
+// Copyright (c) 2021 NetEase, Inc.  All rights reserved.
+// Use of this source code is governed by a MIT license that can be
+// found in the LICENSE file.
 
 part of nertc;
 
@@ -14,103 +16,98 @@ class NERtcAudioMixingManager {
 
   /// 设置伴音事件回调
   Future<int> setEventCallback(NERtcAudioMixingEventCallback callback) async {
-    assert(callback != null);
     _handler.setCallback(callback);
     IntValue reply = await _api.setAudioMixingEventCallback();
-    return reply.value;
+    return reply.value ?? -1;
   }
 
   /// 清除伴音事件回调
   Future<int> clearEventCallback() async {
     _handler.setCallback(null);
     IntValue reply = await _api.clearAudioMixingEventCallback();
-    return reply.value;
+    return reply.value ?? -1;
   }
 
   /// 开始混音任务
   Future<int> startAudioMixing(NERtcAudioMixingOptions options) async {
     IntValue reply = await _api.startAudioMixing(StartAudioMixingRequest()
-      ..path = options?.path
-      ..loopCount = options?.loopCount
-      ..sendEnabled = options?.sendEnabled
-      ..sendVolume = options?.sendVolume
-      ..playbackEnabled = options?.playbackEnabled
-      ..playbackVolume = options?.playbackVolume);
-    return reply.value;
+      ..path = options.path
+      ..loopCount = options.loopCount
+      ..sendEnabled = options.sendEnabled
+      ..sendVolume = options.sendVolume
+      ..playbackEnabled = options.playbackEnabled
+      ..playbackVolume = options.playbackVolume);
+    return reply.value ?? -1;
   }
 
   /// 结束混音任务
   Future<int> stopAudioMixing() async {
     IntValue reply = await _api.stopAudioMixing();
-    return reply.value;
+    return reply.value ?? -1;
   }
 
   /// 暂停混音任务
   Future<int> pauseAudioMixing() async {
     IntValue reply = await _api.pauseAudioMixing();
-    return reply.value;
+    return reply.value ?? -1;
   }
 
   /// 恢复混音任务
   Future<int> resumeAudioMixing() async {
     IntValue reply = await _api.resumeAudioMixing();
-    return reply.value;
+    return reply.value ?? -1;
   }
 
   /// 设置混音发送音量
   Future<int> setAudioMixingSendVolume(int volume) async {
-    assert(volume != null);
     IntValue reply =
         await _api.setAudioMixingSendVolume(IntValue()..value = volume);
-    return reply.value;
+    return reply.value ?? -1;
   }
 
   /// 获取混音发送音量
   Future<int> getAudioMixingSendVolume() async {
     IntValue reply = await _api.getAudioMixingSendVolume();
-    return reply.value;
+    return reply.value ?? -1;
   }
 
   /// 设置混音播放音量
   Future<int> setAudioMixingPlaybackVolume(int volume) async {
-    assert(volume != null);
     IntValue reply =
         await _api.setAudioMixingPlaybackVolume(IntValue()..value = volume);
-    return reply.value;
+    return reply.value ?? -1;
   }
 
   /// 获取混音播放音量
   Future<int> getAudioMixingPlaybackVolume() async {
     IntValue reply = await _api.getAudioMixingPlaybackVolume();
-    return reply.value;
+    return reply.value ?? -1;
   }
 
   /// 获取混音文件时长
   Future<int> getAudioMixingDuration() async {
     IntValue reply = await _api.getAudioMixingDuration();
-    return reply.value;
+    return reply.value ?? -1;
   }
 
   /// 获取混音任务当前进度
   Future<int> getAudioMixingCurrentPosition() async {
     IntValue reply = await _api.getAudioMixingCurrentPosition();
-    return reply.value;
+    return reply.value ?? -1;
   }
 
   /// 定位到具体混音时间点
   Future<int> setAudioMixingPosition(int position) async {
-    assert(position != null);
     IntValue reply =
         await _api.setAudioMixingPosition(IntValue()..value = position);
-    return reply.value;
+    return reply.value ?? -1;
   }
 }
-
 
 /// 伴音构造参数类
 class NERtcAudioMixingOptions {
   const NERtcAudioMixingOptions(
-      {this.path,
+      {required this.path,
       this.loopCount = 1,
       this.sendEnabled = true,
       this.sendVolume = 100,

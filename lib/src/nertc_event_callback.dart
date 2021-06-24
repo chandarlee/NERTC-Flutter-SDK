@@ -1,4 +1,6 @@
-// Copyright (c) 2019-2020 NetEase, Inc. All right reserved.
+// Copyright (c) 2021 NetEase, Inc.  All rights reserved.
+// Use of this source code is governed by a MIT license that can be
+// found in the LICENSE file.
 
 part of nertc;
 
@@ -172,6 +174,30 @@ abstract class NERtcChannelEventCallback {
   ///  上层用户接收到回调信息，代表有啸叫产生，用户可提示用户mute麦克风或者是直接操作mute麦克风
   ///  啸叫检测用于VoIP场景，音乐场景不支持啸叫检测
   void onAudioHasHowling();
+
+  /// 收到sei 信息
+  ///
+  /// [uid] 远端用户ID.
+  /// [seiMsg] SEI 信息
+  void onReceiveSEIMsg(int userID, String seiMsg);
+
+  /// 音频录制状态回调
+  /// [code] 音频录制状态码。详细信息请参考 [NERtcAudioRecordingCode]
+  /// [filePath] 音频录制文件保存路径
+  void onAudioRecording(int code, String filePath);
+
+  /// 跨房间媒体流转发状态发生改变回调
+  ///
+  /// [state] 当前跨房间媒体流转发状态。详细信息请参考 [NERtcChannelMediaRelayState]
+  /// [channelName] 媒体流转发的目标房间名
+  void onMediaRelayStatesChange(int state, String channelName);
+
+  /// 媒体流相关转发事件回调
+  /// 
+  /// [event] 当前媒体流转发事件。详细信息请参考[NERtcChannelMediaRelayEvent]
+  /// [code] 相关错误码。详细信息请参考 [NERtcErrorCode]
+  /// [channelName] 媒体流转发的目标房间名
+  void onMediaRelayReceiveEvent(int event, int code, String channelName);
 }
 
 abstract class NERtcDeviceEventCallback {

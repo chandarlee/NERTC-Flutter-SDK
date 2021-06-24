@@ -1,3 +1,7 @@
+// Copyright (c) 2021 NetEase, Inc.  All rights reserved.
+// Use of this source code is governed by a MIT license that can be
+// found in the LICENSE file.
+
 import 'dart:io';
 
 import 'settings.dart';
@@ -11,7 +15,7 @@ class CallPage extends StatefulWidget {
   final String cid;
   final int uid;
 
-  CallPage({Key key, @required this.cid, @required this.uid});
+  CallPage({Key? key, required this.cid, required this.uid});
 
   @override
   _CallPageState createState() {
@@ -24,9 +28,9 @@ class _CallPageState extends State<CallPage>
         NERtcChannelEventCallback,
         NERtcStatsEventCallback,
         NERtcDeviceEventCallback {
-  Settings _settings;
+  late Settings _settings;
   NERtcEngine _engine = NERtcEngine();
-  List<_UserSession> _remoteSessions = List();
+  List<_UserSession> _remoteSessions = [];
   _UserSession _localSession = _UserSession();
 
   bool _showControlPanel = false;
@@ -89,12 +93,14 @@ class _CallPageState extends State<CallPage>
       // ignore: missing_return
       onWillPop: () {
         _requestPop();
+        return Future.value(true);
       },
     );
   }
 
   Widget buildControlButton(VoidCallback onPressed, Widget child) {
-    return RaisedButton(
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(textStyle: const TextStyle(fontSize: 8)),
       onPressed: onPressed,
       child: child,
     );
@@ -120,7 +126,7 @@ class _CallPageState extends State<CallPage>
   }
 
   Widget buildControlPanel4(BuildContext context) {
-    List<Widget> children = List();
+    List<Widget> children = [];
     children.add(Expanded(
         child: buildControlButton(
       () {
@@ -135,7 +141,6 @@ class _CallPageState extends State<CallPage>
       },
       Text(
         isMuteAudio ? '取消静音' : '静音',
-        style: TextStyle(fontSize: 10),
       ),
     )));
     children.add(Expanded(
@@ -152,7 +157,6 @@ class _CallPageState extends State<CallPage>
       },
       Text(
         isMuteVideo ? 'UnMuteVideo' : 'MuteVideo',
-        style: TextStyle(fontSize: 10),
       ),
     )));
     children.add(Expanded(
@@ -169,7 +173,6 @@ class _CallPageState extends State<CallPage>
       },
       Text(
         isMuteMic ? 'UnMuteMic' : 'MuteMic',
-        style: TextStyle(fontSize: 10),
       ),
     )));
     children.add(Expanded(
@@ -186,7 +189,6 @@ class _CallPageState extends State<CallPage>
       },
       Text(
         isMuteSpeaker ? 'UnMuteSpeaker' : 'MuteSpeaker',
-        style: TextStyle(fontSize: 10),
       ),
     )));
     children.add(Expanded(
@@ -203,7 +205,6 @@ class _CallPageState extends State<CallPage>
       },
       Text(
         isSubAllAudio ? 'UnSubAllA' : 'SubAllA',
-        style: TextStyle(fontSize: 10),
       ),
     )));
     return Container(
@@ -214,7 +215,7 @@ class _CallPageState extends State<CallPage>
   }
 
   Widget buildControlPanel3(BuildContext context) {
-    List<Widget> children = List();
+    List<Widget> children = [];
     if (Platform.isIOS) {
       children.add(Expanded(
           child: buildControlButton(
@@ -223,7 +224,6 @@ class _CallPageState extends State<CallPage>
         },
         Text(
           '结束通话',
-          style: TextStyle(fontSize: 12),
         ),
       )));
     }
@@ -256,7 +256,6 @@ class _CallPageState extends State<CallPage>
       },
       Text(
         isLeaveChannel ? '加入房间' : '离开房间',
-        style: TextStyle(fontSize: 12),
       ),
     )));
     children.add(Expanded(
@@ -276,7 +275,6 @@ class _CallPageState extends State<CallPage>
       },
       Text(
         isAudience ? '切主播' : '切观众',
-        style: TextStyle(fontSize: 12),
       ),
     )));
 
@@ -311,7 +309,6 @@ class _CallPageState extends State<CallPage>
       },
       Text(
         isAudioMixPlaying ? '结束伴音' : '开始伴音',
-        style: TextStyle(fontSize: 12),
       ),
     )));
     if (Platform.isAndroid) {
@@ -341,7 +338,6 @@ class _CallPageState extends State<CallPage>
         },
         Text(
           isAudioEffectPlaying ? '结束音效' : '开始音效',
-          style: TextStyle(fontSize: 12),
         ),
       )));
     }
@@ -353,6 +349,7 @@ class _CallPageState extends State<CallPage>
   }
 
   Widget buildControlPanel1(BuildContext context) {
+    final _channelController = TextEditingController();
     return Container(
         height: 40,
         child: Row(
@@ -371,7 +368,6 @@ class _CallPageState extends State<CallPage>
               },
               Text(
                 isAudioEnabled ? '关闭语音' : '打开语音',
-                style: TextStyle(fontSize: 12),
               ),
             )),
             Expanded(
@@ -388,7 +384,6 @@ class _CallPageState extends State<CallPage>
               },
               Text(
                 isVideoEnabled ? '关闭视频' : '打开视频',
-                style: TextStyle(fontSize: 12),
               ),
             )),
             Expanded(
@@ -397,14 +392,13 @@ class _CallPageState extends State<CallPage>
                 _engine.deviceManager.switchCamera().then((value) {
                   if (value == 0) {
                     isFrontCamera = !isFrontCamera;
-                    _localSession.renderer
+                    _localSession.renderer!
                         .setMirror(isFrontCamera && isFrontCameraMirror);
                   }
                 });
               },
               Text(
                 '切换摄像头',
-                style: TextStyle(fontSize: 12),
               ),
             )),
             Expanded(
@@ -423,15 +417,67 @@ class _CallPageState extends State<CallPage>
               },
               Text(
                 isSpeakerphoneOn ? '关闭扬声器' : '打开扬声器',
-                style: TextStyle(fontSize: 12),
+              ),
+            )),
+            Expanded(
+                child: buildControlButton(
+              () {
+                showDialog(
+                    context: context,
+                    builder: (context) {
+                      return AlertDialog(
+                        title: Text('Media Relay Config'),
+                        content: TextField(
+                            controller: _channelController,
+                            autofocus: true,
+                            decoration: InputDecoration(
+                              hintText: 'Channel Name',
+                            )),
+                        actions: [
+                          TextButton(
+                              child: Text('Add'),
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                addMediaRelay(_channelController.text);
+                              }),
+                          TextButton(
+                              child: Text('Stop'),
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                stopMediaRelay();
+                              }),
+                        ],
+                      );
+                    });
+              },
+              Text(
+                'MediaRelay',
               ),
             )),
           ],
         ));
   }
 
+  void addMediaRelay(String channelName) {
+    if (channelName.isEmpty) return;
+    NERtcChannelMediaRelayInfo info = NERtcChannelMediaRelayInfo(
+        channelName: channelName, channelUid: widget.uid, channelToken: '');
+    NERtcChannelMediaRelayConfiguration config =
+        NERtcChannelMediaRelayConfiguration(null, {channelName: info});
+    _engine.startChannelMediaRelay(config).then((value) => {
+          Fluttertoast.showToast(
+              msg: 'addMediaRelay:$value', gravity: ToastGravity.CENTER)
+        });
+  }
+
+  void stopMediaRelay() async {
+    final result = await _engine.stopChannelMediaRelay();
+    Fluttertoast.showToast(
+        msg: 'stopChannelMediaRelay: $result', gravity: ToastGravity.CENTER);
+  }
+
   Widget buildControlPanel2(BuildContext context) {
-    List<Widget> children = List();
+    List<Widget> children = [];
     children.add(Expanded(
         child: buildControlButton(
       () {
@@ -550,7 +596,7 @@ class _CallPageState extends State<CallPage>
       child: Stack(
         children: [
           session.renderer != null
-              ? NERtcVideoView(session.renderer)
+              ? NERtcVideoView(session.renderer!)
               : Container(),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -601,19 +647,19 @@ class _CallPageState extends State<CallPage>
     });
   }
 
-  Future<int> _initCallbacks() async {
+  Future<int?> _initCallbacks() async {
     await _engine.setStatsEventCallback(this);
     return _engine.deviceManager.setEventCallback(this);
   }
 
-  Future<int> _initAudio() async {
+  Future<int?> _initAudio() async {
     await _engine.enableLocalAudio(isAudioEnabled);
     return _engine.setAudioProfile(
         NERtcAudioProfile.values[_settings.audioProfile],
         NERtcAudioScenario.values[_settings.audioScenario]);
   }
 
-  Future<int> _initVideo() async {
+  Future<int?> _initVideo() async {
     await _engine.enableLocalVideo(isVideoEnabled);
     await _engine.enableDualStreamMode(_settings.enableDualStreamMode);
     NERtcVideoConfig config = NERtcVideoConfig();
@@ -627,8 +673,8 @@ class _CallPageState extends State<CallPage>
 
   Future<void> _initRenderer() async {
     _localSession.renderer = await VideoRendererFactory.createVideoRenderer();
-    _localSession.renderer.setMirror(isFrontCamera && isFrontCameraMirror);
-    _localSession.renderer.attachToLocalVideo();
+    _localSession.renderer!.setMirror(isFrontCamera && isFrontCameraMirror);
+    _localSession.renderer!.attachToLocalVideo();
     setState(() {});
   }
 
@@ -641,7 +687,7 @@ class _CallPageState extends State<CallPage>
     _engine.enableLocalAudio(false);
     _engine.stopVideoPreview();
     if (_localSession.renderer != null) {
-      _localSession.renderer.dispose();
+      _localSession.renderer!.dispose();
       _localSession.renderer = null;
     }
     for (_UserSession session in _remoteSessions) {
@@ -727,7 +773,7 @@ class _CallPageState extends State<CallPage>
         gravity: ToastGravity.CENTER);
     for (_UserSession session in _remoteSessions) {
       if (session.uid == uid) {
-        NERtcVideoRenderer renderer = session.renderer;
+        NERtcVideoRenderer? renderer = session.renderer;
         renderer?.dispose();
         _remoteSessions.remove(session);
       }
@@ -766,12 +812,12 @@ class _CallPageState extends State<CallPage>
       if (session.uid == uid && subStream == session.subStream) {
         session.renderer = renderer;
         if (subStream) {
-          session.renderer.attachToRemoteSubStreamVideo(uid);
+          session.renderer!.attachToRemoteSubStreamVideo(uid);
           if (_settings.autoSubscribeVideo) {
             _engine.subscribeRemoteSubStreamVideo(uid, true);
           }
         } else {
-          session.renderer.attachToRemoteVideo(uid);
+          session.renderer!.attachToRemoteVideo(uid);
           if (_settings.autoSubscribeVideo) {
             _engine.subscribeRemoteVideo(
                 uid, NERtcRemoteVideoStreamType.high, true);
@@ -786,7 +832,7 @@ class _CallPageState extends State<CallPage>
   Future<void> releaseVideoView(int uid) async {
     for (_UserSession session in _remoteSessions) {
       if (session.uid == uid) {
-        NERtcVideoRenderer renderer = session.renderer;
+        NERtcVideoRenderer? renderer = session.renderer;
         session.renderer = null;
         renderer?.dispose();
         break;
@@ -945,7 +991,7 @@ class _CallPageState extends State<CallPage>
         msg: 'onUserSubStreamVideoStop#$uid', gravity: ToastGravity.CENTER);
     for (_UserSession session in _remoteSessions) {
       if (session.uid == uid && session.subStream) {
-        NERtcVideoRenderer renderer = session.renderer;
+        NERtcVideoRenderer? renderer = session.renderer;
         renderer?.dispose();
         _remoteSessions.remove(session);
         break;
@@ -959,10 +1005,30 @@ class _CallPageState extends State<CallPage>
     Fluttertoast.showToast(
         msg: 'onAudioHasHowling', gravity: ToastGravity.CENTER);
   }
+
+  @override
+  void onReceiveSEIMsg(int userID, String seiMsg) {}
+
+  @override
+  void onAudioRecording(int code, String filePath) {}
+
+  @override
+  void onMediaRelayReceiveEvent(int event, int code, String channelName) {
+    Fluttertoast.showToast(
+        msg: 'onMediaRelayReceiveEvent: ${Utils.mediaRelayEvent2String(event)} '
+            '$code $channelName', gravity: ToastGravity.CENTER);
+  }
+
+  @override
+  void onMediaRelayStatesChange(int state, String channelName) {
+    Fluttertoast.showToast(
+        msg: 'onMediaRelayStatesChange: ${Utils.mediaRelayState2String(state)} '
+            '$channelName', gravity: ToastGravity.CENTER);
+  }
 }
 
 class _UserSession {
-  int uid;
-  NERtcVideoRenderer renderer;
+  int? uid;
+  NERtcVideoRenderer? renderer;
   bool subStream = false;
 }

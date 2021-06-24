@@ -1,6 +1,7 @@
 /*
- * Copyright (c) 2014-2020 NetEase, Inc.
- * All right reserved.
+ * Copyright (c) 2021 NetEase, Inc.  All rights reserved.
+ * Use of this source code is governed by a MIT license that can be 
+ * found in the LICENSE file.
  */
 
 package com.netease.nertcflutter;
@@ -18,6 +19,8 @@ import androidx.annotation.Nullable;
 
 import com.netease.lava.nertc.sdk.NERtc;
 import com.netease.lava.nertc.sdk.NERtcEx;
+import com.netease.lava.nertc.sdk.NERtcMediaRelayParam;
+import com.netease.lava.nertc.sdk.NERtcMediaRelayParam.ChannelMediaRelayConfiguration;
 import com.netease.lava.nertc.sdk.NERtcOption;
 import com.netease.lava.nertc.sdk.NERtcParameters;
 import com.netease.lava.nertc.sdk.audio.NERtcCreateAudioEffectOption;
@@ -111,7 +114,7 @@ public class NERtcEngine implements EngineApi, AudioEffectApi, AudioMixingApi, D
 
     @FunctionalInterface
     interface SuccessCallback {
-        void onSuccess(@Nullable Object result);
+        void onSuccess(long result);
     }
 
     @FunctionalInterface
@@ -221,7 +224,7 @@ public class NERtcEngine implements EngineApi, AudioEffectApi, AudioMixingApi, D
         if (arg.getAudioAutoSubscribe() != null) {
             parameters.setBoolean(NERtcParameters.KEY_AUTO_SUBSCRIBE_AUDIO, arg.getAudioAutoSubscribe());
         }
-        if(arg.getAudioAINSEnabled() != null) {
+        if (arg.getAudioAINSEnabled() != null) {
             parameters.setBoolean(NERtcParameters.KEY_AUDIO_AI_NS_ENABLE, arg.getAudioAINSEnabled());
         }
 
@@ -237,6 +240,9 @@ public class NERtcEngine implements EngineApi, AudioEffectApi, AudioMixingApi, D
         if (arg.getVideoSendMode() != null) {
             parameters.setInteger(NERtcParameters.KEY_VIDEO_SEND_MODE, arg.getVideoSendMode().intValue());
         }
+//        if (arg.getVideoH265Enabled() != null) {
+//            parameters.setBoolean(NERtcParameters.KEY_H265_SWITCH, arg.getVideoH265Enabled());
+//        }
 
 
         //录制
@@ -262,6 +268,7 @@ public class NERtcEngine implements EngineApi, AudioEffectApi, AudioMixingApi, D
             NERtcEx.getInstance().setParameters(parameters);
             NERtcEx.getInstance().init(applicationContext, appKey, callback, option);
             NERtcEx.getInstance().setAudioProcessObserver(audioProcessObserver);
+            result.setValue(0L);
         } catch (Exception e) {
             Log.e("NERtcEngine", "Create RTC engine exception:" + e.toString());
             result.setValue(-3L);
@@ -270,7 +277,7 @@ public class NERtcEngine implements EngineApi, AudioEffectApi, AudioMixingApi, D
     }
 
     @Override
-    public IntValue release() {
+    public void release(Messages.Result<IntValue> result) {
         NERtcEx.getInstance().setStatsObserver(null);
         NERtcEx.getInstance().setAudioProcessObserver(null);
         callback.setAudioMixingCallbackEnabled(false);
@@ -288,9 +295,9 @@ public class NERtcEngine implements EngineApi, AudioEffectApi, AudioMixingApi, D
             sharedEglContext.release();
             sharedEglContext = null;
         }
-        IntValue result = new IntValue();
-        result.setValue(0L);
-        return result;
+        IntValue value = new IntValue();
+        value.setValue(0L);
+        result.success(value);
     }
 
 
@@ -427,25 +434,30 @@ public class NERtcEngine implements EngineApi, AudioEffectApi, AudioMixingApi, D
         activity.startActivityForResult(captureIntent, CAPTURE_PERMISSION_REQUEST_CODE);
     }
 
-
     @Override
-    public void startScreenCapture(Messages.StartScreenCaptureRequest arg, SuccessCallback successCallback) {
+    public void startScreenCapture(Messages.StartScreenCaptureRequest arg, Messages.Result<IntValue> result) {
         if (activity == null) {
             Log.e("NERtcEngine", "startScreenCapture error: " +
                     "Android activity is required to screen capture and cannot be null.");
-            successCallback.onSuccess(-2);
+            IntValue value = new IntValue();
+            value.setValue(-2L);
+            result.success(value);
             return;
         }
         if (addActivityResultListener == null) {
             Log.e("NERtcEngine", "startScreenCapture error: " +
                     "Activity result listener is required to screen capture and cannot be null.");
-            successCallback.onSuccess(-3);
+            IntValue value = new IntValue();
+            value.setValue(-3L);
+            result.success(value);
             return;
         }
         if (removeActivityResultListener == null) {
             Log.e("NERtcEngine", "startScreenCapture error: " +
                     "Activity result listener is required to screen capture and cannot be null.");
-            successCallback.onSuccess(-4);
+            IntValue value = new IntValue();
+            value.setValue(-4L);
+            result.success(value);
             return;
         }
 
@@ -456,8 +468,11 @@ public class NERtcEngine implements EngineApi, AudioEffectApi, AudioMixingApi, D
         config.minBitrate = arg.getMinBitrate().intValue();
         config.minFramerate = arg.getMinFrameRate().intValue();
         config.videoProfile = arg.getVideoProfile().intValue();
-        ActivityResultListener activityResultListener = new ActivityResultListener(successCallback,
-                config, removeActivityResultListener);
+        ActivityResultListener activityResultListener = new ActivityResultListener(result1 -> {
+            IntValue value = new IntValue();
+            value.setValue(result1);
+            result.success(value);
+        }, config, removeActivityResultListener);
         addActivityResultListener.addListener(activityResultListener);
         requestScreenCapture(applicationContext, activity);
     }
@@ -593,8 +608,9 @@ public class NERtcEngine implements EngineApi, AudioEffectApi, AudioMixingApi, D
         ArrayList<NERtcLiveStreamUserTranscoding> userTranscodingList = new ArrayList<>();
         layout.userTranscodingList = userTranscodingList;
         if (arg.getLayoutUserTranscodingList() != null) {
-            ArrayList<Map<String, Object>> userList = arg.getLayoutUserTranscodingList();
-            for (Map<String, Object> user : userList) {
+            ArrayList<Object> userList = (ArrayList<Object>) arg.getLayoutUserTranscodingList();
+            for (Object obj : userList) {
+                Map<String, Object> user = (Map<String, Object>) obj;
                 NERtcLiveStreamUserTranscoding userTranscoding = new NERtcLiveStreamUserTranscoding();
                 Object uid = user.get("uid");
                 if (uid instanceof Number) {
@@ -693,8 +709,9 @@ public class NERtcEngine implements EngineApi, AudioEffectApi, AudioMixingApi, D
         ArrayList<NERtcLiveStreamUserTranscoding> userTranscodingList = new ArrayList<>();
         layout.userTranscodingList = userTranscodingList;
         if (arg.getLayoutUserTranscodingList() != null) {
-            ArrayList<Map<String, Object>> userList = arg.getLayoutUserTranscodingList();
-            for (Map<String, Object> user : userList) {
+            ArrayList<Object> userList = (ArrayList<Object>) arg.getLayoutUserTranscodingList();
+            for (Object obj : userList) {
+                Map<String, Object> user = (Map<String, Object>) obj;
                 NERtcLiveStreamUserTranscoding userTranscoding = new NERtcLiveStreamUserTranscoding();
                 Object uid = user.get("uid");
                 if (uid instanceof Number) {
@@ -786,6 +803,132 @@ public class NERtcEngine implements EngineApi, AudioEffectApi, AudioMixingApi, D
         return result;
     }
 
+    @Override
+    public IntValue switchChannel(Messages.SwitchChannelRequest arg) {
+        int ret = NERtcEx.getInstance().switchChannel(arg.getToken(), arg.getChannelName());
+        IntValue result = new IntValue();
+        result.setValue((long) ret);
+        return result;
+    }
+
+    @Override
+    public IntValue startAudioRecording(Messages.StartAudioRecordingRequest arg) {
+        int ret = NERtcEx.getInstance().startAudioRecording(arg.getFilePath(),
+                arg.getSampleRate().intValue(), arg.getQuality().intValue());
+        IntValue result = new IntValue();
+        result.setValue((long) ret);
+        return result;
+    }
+
+    @Override
+    public IntValue stopAudioRecording() {
+        int ret = NERtcEx.getInstance().stopAudioRecording();
+        IntValue result = new IntValue();
+        result.setValue((long) ret);
+        return result;
+    }
+
+    @Override
+    public IntValue setLocalMediaPriority(Messages.SetLocalMediaPriorityRequest arg) {
+        int ret = NERtcEx.getInstance().setLocalMediaPriority(arg.getPriority().intValue(), arg.getIsPreemptive());
+        IntValue result = new IntValue();
+        result.setValue((long) ret);
+        return result;
+    }
+
+    @Override
+    public IntValue startChannelMediaReplay(Messages.StartOrUpdateChannelMediaReplayRequest arg) {
+        ChannelMediaRelayConfiguration configuration = new NERtcMediaRelayParam().new ChannelMediaRelayConfiguration();
+        configuration.sourceMediaInfo = FLTUtils.fromMap(arg.getSourceMediaInfo());
+        for (Object key : arg.getDestMediaInfo().keySet()) {
+            Map<Object, Object> value = (Map<Object, Object>) arg.getDestMediaInfo().get(key);
+            configuration.destMediaInfo.put((String) key, FLTUtils.fromMap(value));
+        }
+        int ret = NERtcEx.getInstance().startChannelMediaRelay(configuration);
+        IntValue result = new IntValue();
+        result.setValue((long) ret);
+        return result;
+    }
+
+    @Override
+    public IntValue updateChannelMediaRelay(Messages.StartOrUpdateChannelMediaReplayRequest arg) {
+        ChannelMediaRelayConfiguration configuration = new NERtcMediaRelayParam().new ChannelMediaRelayConfiguration();
+        configuration.sourceMediaInfo = FLTUtils.fromMap(arg.getSourceMediaInfo());
+        for (Object key : arg.getDestMediaInfo().keySet()) {
+            Map<Object, Object> value = (Map<Object, Object>) arg.getDestMediaInfo().get(key);
+            configuration.destMediaInfo.put((String) key, FLTUtils.fromMap(value));
+        }
+        int ret = NERtcEx.getInstance().updateChannelMediaRelay(configuration);
+        IntValue result = new IntValue();
+        result.setValue((long) ret);
+        return result;
+    }
+
+    @Override
+    public IntValue stopChannelMediaRelay() {
+        int ret = NERtcEx.getInstance().stopChannelMediaRelay();
+        IntValue result = new IntValue();
+        result.setValue((long) ret);
+        return result;
+    }
+
+    @Override
+    public IntValue adjustUserPlaybackSignalVolume(Messages.AdjustUserPlaybackSignalVolumeRequest arg) {
+        int ret = NERtcEx.getInstance().adjustUserPlaybackSignalVolume(arg.getUid(), arg.getVolume().intValue());
+        IntValue result = new IntValue();
+        result.setValue((long) ret);
+        return result;
+    }
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////// SEI /////////////////////////////////////////////
+
+    @Override
+    public IntValue sendSEIMsg(Messages.SendSEIMsgRequest arg) {
+        int ret = NERtcEx.getInstance().sendSEIMsg(arg.getSeiMsg(), FLTUtils.int2VideoStreamType(arg.getStreamType().intValue()));
+        IntValue result = new IntValue();
+        result.setValue((long) ret);
+        return result;
+    }
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////// Voice Effect /////////////////////////////////////////////
+
+
+    @Override
+    public IntValue setAudioEffectPreset(IntValue arg) {
+        int ret = NERtcEx.getInstance().setAudioEffectPreset(arg.getValue().intValue());
+        IntValue result = new IntValue();
+        result.setValue((long) ret);
+        return result;
+    }
+
+    @Override
+    public IntValue setVoiceBeautifierPreset(IntValue arg) {
+        int ret = NERtcEx.getInstance().setVoiceBeautifierPreset(arg.getValue().intValue());
+        IntValue result = new IntValue();
+        result.setValue((long) ret);
+        return result;
+    }
+
+    @Override
+    public IntValue setLocalVoicePitch(DoubleValue arg) {
+        int ret = NERtcEx.getInstance().setLocalVoicePitch(arg.getValue());
+        IntValue result = new IntValue();
+        result.setValue((long) ret);
+        return result;
+    }
+
+    @Override
+    public IntValue setLocalVoiceEqualization(Messages.SetLocalVoiceEqualizationRequest arg) {
+        int ret = NERtcEx.getInstance().setLocalVoiceEqualization(arg.getBandFrequency().intValue(), arg.getBandGain().intValue());
+        IntValue result = new IntValue();
+        result.setValue((long) ret);
+        return result;
+    }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1207,7 +1350,7 @@ public class NERtcEngine implements EngineApi, AudioEffectApi, AudioMixingApi, D
         int ret = -1;
         if (arg.getTextureId() != null) {
             FlutterVideoRenderer renderer = renderers.get(arg.getTextureId());
-            if(renderer != null) {
+            if (renderer != null) {
                 renderer.setMirror(arg.getMirror());
                 ret = 0;
             }

@@ -1,4 +1,6 @@
-// Copyright (c) 2019-2020 NetEase, Inc. All right reserved.
+// Copyright (c) 2021 NetEase, Inc.  All rights reserved.
+// Use of this source code is governed by a MIT license that can be
+// found in the LICENSE file.
 
 part of nertc;
 
@@ -19,57 +21,65 @@ class NERtcOptions {
       this.videoEncodeMode,
       this.videoDecodeMode,
       this.videoCaptureObserverEnabled,
-      this.videoSendMode});
+      this.videoSendMode,
+      this.videoH265Enabled,
+      this.mode1v1Enabled});
 
   /// 日志路径
-  final String logDir;
+  final String? logDir;
 
   /// 日志等级
-  final int logLevel;
+  final int? logLevel;
 
   /// 是否自动订阅音频（默认订阅）
-  final bool audioAutoSubscribe;
+  final bool? audioAutoSubscribe;
 
   /// 系统切换听筒事件时，禁用切换到扬声器.
   /// 仅在iOS平台有效.
   /// 默认值 false, 如设置 true 则禁止SDK在系统切换到听筒时做切换扬声器操作，需要用户自己处理切换听筒事件
-  final bool audioDisableOverrideSpeakerOnReceiver;
+  final bool? audioDisableOverrideSpeakerOnReceiver;
 
   /// 设置耳机时不使用软件回声消除功能
   /// 仅在iOS平台有效.
   /// 默认值 false,如设置true 则SDK在耳机模式下不使用软件回声消除功能，会对某些机型下 耳机的音质效果有影响
-  final bool audioDisableSWAECOnHeadset;
+  final bool? audioDisableSWAECOnHeadset;
 
   /// 设置是否开启AI降噪，开启AI降噪，在嘈杂环境下，让对方更清晰听到您的声音
-  final bool audioAINSEnabled;
+  final bool? audioAINSEnabled;
 
   /// 是否开启服务器录制语音
-  final bool serverRecordAudio;
+  final bool? serverRecordAudio;
 
   /// 是否开启服务器录制视频
-  final bool serverRecordVideo;
+  final bool? serverRecordVideo;
 
   /// 服务器录制模式
-  final NERtcServerRecordMode serverRecordMode;
+  final NERtcServerRecordMode? serverRecordMode;
 
   /// 是否服务器录制主讲人
-  final bool serverRecordSpeaker;
+  final bool? serverRecordSpeaker;
 
   /// 是否允许在房间推流时推送自身的视频流
-  final bool publishSelfStream;
+  final bool? publishSelfStream;
 
   /// 是否允许视频帧回调.
   /// 仅在iOS平台有效.
-  final bool videoCaptureObserverEnabled;
+  final bool? videoCaptureObserverEnabled;
 
   /// 视频编码模式
-  final NERtcMediaCodecMode videoEncodeMode;
+  final NERtcMediaCodecMode? videoEncodeMode;
 
   /// 视频解码模式.
-  final NERtcMediaCodecMode videoDecodeMode;
+  final NERtcMediaCodecMode? videoDecodeMode;
 
   /// 视频发布模式
-  final NERtcVideoSendMode videoSendMode;
+  final NERtcVideoSendMode? videoSendMode;
+
+  ///是否开启H265
+  final bool? videoH265Enabled;
+
+  /// 是否开启频道1V1模式，joinChannel 前设置生效
+  final bool? mode1v1Enabled;
 }
 
 /// Camera类型
@@ -181,18 +191,6 @@ class NERtcVideoProfile {
   static const int hd1080p = 4;
 }
 
-///屏幕共享清晰度
-class NERtcScreenProfile {
-  ///高清, (640x360/480 @5fps)
-  static const int hd480p = 0;
-
-  ///超清, (1280x720 @5 fps)
-  static const int hd720p = 1;
-
-  ///1080P, (1920x1080 @5fps)
-  static const int hd1080p = 2;
-}
-
 ///视频画布缩放方式
 enum NERtcVideoViewFitType {
   /// As large as possible while still containing the source entirely within the
@@ -224,7 +222,7 @@ class NERtcVideoStreamType {
   static const int main = 1;
 
   /// 辅流
-  int sub = 2;
+  static const int sub = 2;
 }
 
 ///网络类型定义
@@ -508,6 +506,23 @@ class NERtcErrorCode {
   ///媒体源未找到
   static const int sourceNotFound = 30108;
 
+  ///切换房间状态无效
+  static const int switchChannelInvalidState = 30109;
+
+  /// 原因通常为重复调用 startChannelMediaRelay。成功调用startChannelMediaRelay后，必须先调用 stopChannelMediaRelay 方法退出当前的转发状态，才能再次调用该方法
+  static const int channelMediaRelayInvalidState = 30110;
+
+  /// 媒体流转发权限不足
+  ///
+  /// 原因通常包括：
+  /// - 源房间的房间类型为双人房间（1V1模式）。此时无法转发媒体流。
+  /// - 调用 startChannelMediaRelay 开启媒体流转发的成员角色为观众角色，仅主播角色可以转发媒体流。
+  static const int channelMediaRelayPermissionDenied = 30111;
+
+  /// 停止媒体流转发操作失败
+  /// 原因通常为未开启媒体流转发。请确认调用 stopChannelMediaRelay 前，是否已成功调用 startChannelMediaRelay 开启媒体流转发。
+  static const int channelMediaRelayStopFailed = 30112;
+
   ///连接未找到
   static const int connectionNotFound = 30200;
 
@@ -531,6 +546,9 @@ class NERtcErrorCode {
 
   ///房间被关闭
   static const int roomClosed = 30207;
+
+  /// 因为切换频道而离开房间
+  static const int leaveChannelForSwitch = 30208;
 }
 
 /// 运行时错误
@@ -772,19 +790,19 @@ class NERtcLiveStreamLayout {
   });
 
   /// 视频推流宽度
-  int width;
+  int? width;
 
   /// 视频推流高度
-  int height;
+  int? height;
 
   /// 视频推流背景色 RGB
-  Color backgroundColor;
+  Color? backgroundColor;
 
   /// 视频推流背景图
-  NERtcLiveStreamImageInfo backgroundImg;
+  NERtcLiveStreamImageInfo? backgroundImg;
 
   /// 成员布局数组
-  List<NERtcLiveStreamUserTranscoding> userTranscodingList;
+  List<NERtcLiveStreamUserTranscoding>? userTranscodingList;
 }
 
 class NERtcLiveStreamVideoScaleMode {
@@ -798,7 +816,7 @@ class NERtcLiveStreamVideoScaleMode {
 /// 直播成员布局
 class NERtcLiveStreamUserTranscoding {
   NERtcLiveStreamUserTranscoding(
-      {@required this.uid,
+      {required this.uid,
       this.videoPush = true,
       this.audioPush = true,
       this.adaption = NERtcLiveStreamVideoScaleMode.liveStreamModeVideoScaleFit,
@@ -851,7 +869,7 @@ class NERtcLiveStreamImageInfo {
       {this.url, this.x = 0, this.y = 0, this.width = 0, this.height = 0});
 
   /// 图片地址url
-  String url;
+  String? url;
 
   /// 图片离主画面左边距 ， 默认 0
   int x;
@@ -869,8 +887,8 @@ class NERtcLiveStreamImageInfo {
 /// 房间推流任务参数
 class NERtcLiveStreamTaskInfo {
   NERtcLiveStreamTaskInfo(
-      {this.taskId,
-      this.url,
+      {required this.taskId,
+      required this.url,
       this.serverRecordEnabled = false,
       this.liveMode = NERtcLiveStreamMode.liveStreamModeVideo,
       this.layout});
@@ -888,7 +906,7 @@ class NERtcLiveStreamTaskInfo {
   int liveMode;
 
   /// 视频布局
-  NERtcLiveStreamLayout layout;
+  NERtcLiveStreamLayout? layout;
 }
 
 /// 频道连接状态
@@ -955,4 +973,245 @@ class NERtcClientRole {
 
   /// 观众
   static const int audience = 1;
+}
+
+/// 变声 预设值
+class NERtcVoiceChangerType {
+  /// 关闭
+  static const int off = 0;
+
+  /// 机器人
+  static const int robot = 1;
+
+  /// 巨人
+  static const int giant = 2;
+
+  /// 恐怖
+  static const int horror = 3;
+
+  /// 成熟
+  static const int mature = 4;
+
+  /// 男变女
+  static const int manToWoman = 5;
+
+  /// 女变男
+  static const int womanToMan = 6;
+
+  /// 男变萝莉
+  static const int manToLoli = 7;
+
+  /// 女变萝莉
+  static const int womanToLoli = 8;
+}
+
+/// 美声效果
+class NERtcVoiceBeautifierType {
+  /// 默认关闭
+  static const int off = 0;
+
+  /// 低沉
+  static const int muffled = 1;
+
+  /// 圆润
+  static const int mellow = 2;
+
+  /// 清澈
+  static const int clear = 3;
+
+  /// 磁性
+  static const int magnetic = 4;
+
+  /// 录音棚
+  static const int recordingStudio = 5;
+
+  /// 天籁
+  static const int nature = 6;
+
+  /// KTV
+  static const int ktv = 7;
+
+  /// 悠远
+  static const int remote = 8;
+
+  /// 教堂
+  static const int church = 9;
+
+  /// 卧室
+  static const int bedroom = 10;
+
+  /// live
+  static const int live = 11;
+}
+
+///伴音错误状态
+class NERtcAudioMixingError {
+  /// 伴音正常结束
+  static const int finish = 0;
+
+  /// 音频解码错误
+  static const int errorDecode = 1;
+
+  /// 操作中断码
+  static const int errorInterrupt = 2;
+
+  /// 404 http/https 对应的文件找不到
+  static const int errorHttpNotFound = 3;
+
+  /// 打开流/文件失败
+  static const int errorOpen = 4;
+
+  /// 获取解码信息失败/超时
+  static const int errorNoInfo = 5;
+
+  /// 无音频流
+  static const int errorNoStream = 6;
+
+  /// 无解码器
+  static const int errorNoCodec = 7;
+
+  /// 无内存
+  static const int errorNoMemory = 8;
+
+  /// 解码器打开失败/超时
+  static const int errorCodecOpen = 9;
+
+  /// 无效音频参数（声道、采样率）
+  static const int errorInvalidInfo = 10;
+
+  /// 打开流/文件超时
+  static const int errorOpenTimeout = 11;
+
+  /// 网络IO 超时
+  static const int errorIOTimeout = 12;
+
+  /// 网络IO 错误
+  static const int errorIO = 13;
+}
+
+/// 媒体流优先级
+class NERtcMediaPriority {
+  /// 高优先级
+  static const int high = 50;
+
+  /// （默认）普通优先级
+  static const int normal = 100;
+}
+
+/// 录音音质
+class NERtcAudioRecordingQuality {
+  /// 低音质
+  static const int low = 0;
+
+  /// （默认）中音质
+  static const int medium = 1;
+
+  /// 高音质
+  static const int high = 2;
+}
+
+/// 录音回调事件状态码
+class NERtcAudioRecordingCode {
+  /// 不支持的录音文件格式
+  static const int errorSuffix = 1;
+
+  /// 无法创建录音文件，原因通常包括：
+  /// - 应用没有磁盘写入权限。
+  /// - 文件路径不存在。
+  static const int openFileFailed = 2;
+
+  /// 开始录制
+  static const int start = 3;
+
+  /// 录制错误。原因通常为磁盘空间已满，无法写入
+  static const int error = 4;
+
+  /// 完成录制
+  static const int finish = 5;
+}
+
+/// 媒体流转发相关的数据结构
+class NERtcChannelMediaRelayInfo {
+  /// 用户 ID
+  int channelUid;
+
+  /// 房间名
+  String channelName;
+
+  /// 房间 Token
+  String channelToken;
+
+  NERtcChannelMediaRelayInfo(
+      {required this.channelUid,
+      required this.channelName,
+      required this.channelToken});
+
+  Map<dynamic, dynamic> _toMap() {
+    final Map<dynamic, dynamic> map = <dynamic, dynamic>{};
+    map['channelUid'] = channelUid;
+    map['channelName'] = channelName;
+    map['channelToken'] = channelToken;
+    return map;
+  }
+
+  static NERtcChannelMediaRelayInfo fromMap(Map<String, dynamic> map) {
+    return NERtcChannelMediaRelayInfo(
+        channelUid: map['channelUid'] ?? 0,
+        channelName: map['channelName'] ?? '',
+        channelToken: map['channelToken'] ?? '');
+  }
+}
+
+/// 媒体流转发参数，包括源房间、目标房间列表等
+class NERtcChannelMediaRelayConfiguration {
+  /// 源房间信息
+  NERtcChannelMediaRelayInfo? sourceMediaInfo;
+
+  /// 目标房间信息列表
+  Map<String, NERtcChannelMediaRelayInfo> destMediaInfo;
+
+  NERtcChannelMediaRelayConfiguration(this.sourceMediaInfo, this.destMediaInfo);
+}
+
+/// 媒体流转发状态
+class NERtcChannelMediaRelayState {
+  /// 初始状态。在成功调用 [NERtcEngine.stopChannelMediaRelay] 停止跨房间媒体流转发后， [onNERtcEngineChannelMediaRelayStateDidChange] 会回调该状态
+  static const int idle = 0;
+
+  /// SDK 尝试跨房间转发媒体流
+  static const int connecting = 1;
+
+  /// 源房间主播角色成功加入目标频道
+  static const int running = 2;
+
+  /// 发生异常，详见 [onMediaRelayReceiveEvent] 的 error 中提示的错误信息
+  static const int failure = 3;
+}
+
+/// 媒体流转发回调事件
+class NERtcChannelMediaRelayEvent {
+  /// 媒体流转发停止
+  static const int disconnect = 0;
+
+  /// 正在连接服务器，开始尝试转发媒体流
+  static const int connecting = 1;
+
+  /// 连接服务器成功
+  static const int connected = 2;
+
+  /// 视频媒体流成功转发到目标房间
+  static const int videoSentSuccess = 3;
+
+  /// 音频媒体流成功转发到目标房间
+  static const int audioSentSuccess = 4;
+
+  /// 屏幕共享等其他媒体流成功转发到目标房间
+  static const int otherStreamSentSuccess = 5;
+
+  /// 媒体流转发失败。原因包括：
+  /// - reserveInvalidParameter(414)：请求参数错误。
+  /// - channelMediaRelayInvalidState(30110)：重复调用 startChannelMediaRelay。
+  /// - channelMediaRelayPermissionDenied(30111)：媒体流转发权限不足。例如调用 startChannelMediaRelay 的房间成员为主播角色、或房间为双人通话房间，不支持转发媒体流。
+  /// - channelMediaRelayStopFailed(30112)：调用 stopChannelMediaRelay 前，未调用 startChannelMediaRelay。
+  static const int failure = 100;
 }
